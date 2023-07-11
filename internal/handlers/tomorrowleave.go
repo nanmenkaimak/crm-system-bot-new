@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-telegram/bot"
-	"github.com/go-telegram/ui/slider"
 	"github.com/nanmenkaimak/crm-system-bot-new/internal/tables"
 	"sync"
 	"time"
@@ -14,7 +13,12 @@ func (m *Repository) TomorrowLeave(ctx context.Context, b *bot.Bot, mutex *sync.
 	mutex.Lock()
 	layout := "2006-01-02 15:04:05"
 	for {
-		today := time.Now().UTC().Format("2006-01-02")
+		today := time.Now().UTC().Format("2006-01-02") + " 00:00:00"
+		todayTime, err := time.Parse("2006-01-02 15:04:05", today)
+		if err != nil {
+			fmt.Println("Error parsing first timestamp:", err)
+			return
+		}
 		location, err := time.LoadLocation("Asia/Almaty")
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -28,39 +32,37 @@ func (m *Repository) TomorrowLeave(ctx context.Context, b *bot.Bot, mutex *sync.
 
 			var allCostumers []tables.Customer
 
-			m.DB.Where("departure_day = ? and is_here = ?", today, true).Find(&allCostumers)
+			m.DB.Where("departure_day = ? and is_here = ?", todayTime, true).Find(&allCostumers)
 
 			if len(allCostumers) == 0 {
 				b.SendMessage(ctx, &bot.SendMessageParams{
 					ChatID: 1168238274,
-					Text:   "Ертен ешкым кетпейды \nБары Норм",
+					Text:   "Бугын ешкым кетпейды \nБары Норм",
 				})
 				continue
 			}
+			textLeave := fmt.Sprintf("Мыналар бугын кетеды \n")
+
 			for i, information := range allCostumers {
-				var inforOfCustomer slider.Slide
+				var rooms tables.Room
+				m.DB.Table("rooms").
+					Joins("JOIN beds ON rooms.id = beds.room_id").
+					Joins("JOIN customers ON beds.id = customers.bed_id").
+					Where("customers.bed_id = ?", information.BedID).Find(&rooms)
 				if information.ID > 0 {
-					inforOfCustomer = slider.Slide{
-						Text: fmt.Sprintf("Мыналар бугын кету керек\n*%d\\.* Full Name: %s\n Phone: %s\n Info: %s\n Money: %d тг толеды \n Arrival Day: %s\n Departure Day: %s\n", i+1,
-							information.FullName, information.Phone,
-							information.Info, information.Money, information.ArrivalDay.Format("2006/01/02"),
-							information.DepartureDay.Format("2006/01/02")),
-						Photo: information.Photo,
-					}
+					textLeave += fmt.Sprintf("%d. Аты: %s\nТурган жеры: %s\nИнфо: %s\nКелген куны: %s\nКететын куны: %s\n",
+						i+1, information.FullName, rooms.Name, information.Info, information.ArrivalDay.Format("2006-01-02"),
+						information.DepartureDay.Format("2006-01-02"))
 				}
-				slides = append(slides, inforOfCustomer)
 			}
-
-			opts := []slider.Option{
-				slider.OnSelect("Update", true, m.sliderOnUpdate),
-			}
-
-			sl := slider.New(slides, opts...)
 
 			var allUsers []tables.User
 			m.DB.Find(&allUsers)
 			for _, user := range allUsers {
-				sl.Show(ctx, b, user.Username)
+				b.SendMessage(ctx, &bot.SendMessageParams{
+					ChatID: user.Username,
+					Text:   textLeave,
+				})
 			}
 		}
 	}
