@@ -132,6 +132,10 @@ func (m *Repository) Handler(ctx context.Context, b *bot.Bot, update *models.Upd
 			m.ReportTime(ctx, b, update)
 			return
 		}
+		if values["for"] == "change_date" {
+			m.UpdateDate(ctx, b, update)
+			return
+		}
 		break
 	}
 }
@@ -193,6 +197,7 @@ func (m *Repository) sliderOnUpdate(ctx context.Context, b *bot.Bot, message *mo
 		kb.Row().Button("Add", []byte(strconv.Itoa(allBeds[item].ID)), m.onInlineKeyboardSelectAfterUpdateAdd)
 	} else {
 		kb.Row().Button("Delete", []byte(strconv.Itoa(allBeds[item].ID)), m.onInlineKeyboardSelectAfterUpdateDelete)
+		kb.Row().Button("Change", []byte(strconv.Itoa(allBeds[item].ID)), m.onInlineKeyboardSelectAfterUpdateChange)
 	}
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:      message.Chat.ID,
@@ -215,5 +220,27 @@ func (m *Repository) onInlineKeyboardSelectAfterUpdateDelete(ctx context.Context
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: mes.Chat.ID,
 		Text:   "Удалить еттым",
+	})
+}
+
+func (m *Repository) onInlineKeyboardSelectAfterUpdateChange(ctx context.Context, b *bot.Bot, mes *models.Message, data []byte) {
+	bedID := string(data)
+	values["for"] = "change_date"
+	values["bed_id"] = bedID
+	kb := datepicker.New(b, arrivalDayPicker)
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:      mes.Chat.ID,
+		Text:        "Продлить еткен куны",
+		ReplyMarkup: kb,
+	})
+	kb = datepicker.New(b, departureDayPicker)
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:      mes.Chat.ID,
+		Text:        "Кететын кунды жаз",
+		ReplyMarkup: kb,
+	})
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: mes.Chat.ID,
+		Text:   "Канша акша толеды",
 	})
 }

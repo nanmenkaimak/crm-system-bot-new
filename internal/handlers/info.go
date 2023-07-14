@@ -106,6 +106,39 @@ func (m *Repository) Info(ctx context.Context, b *bot.Bot, update *models.Update
 	})
 }
 
+func (m *Repository) UpdateDate(ctx context.Context, b *bot.Bot, update *models.Update) {
+	arrivalDay, err := time.Parse(layout, values["arrival_day"])
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	departureDay, err := time.Parse(layout, values["departure_day"])
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	money, _ := strconv.Atoi(update.Message.Text)
+
+	var customer tables.Customer
+	m.DB.Where("bed_id = ? and is_here = ?", values["bed_id"], true).Find(&customer)
+	t := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
+	if customer.ArrivalDay.After(t) {
+		money += customer.Money
+	}
+
+	m.DB.Model(&tables.Customer{}).Where("bed_id = ? and is_here = ?", values["bed_id"], true).Updates(tables.Customer{
+		Money:        money,
+		ArrivalDay:   arrivalDay,
+		DepartureDay: departureDay,
+	})
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   "Продлевать етылды",
+	})
+}
+
 func arrivalDayPicker(ctx context.Context, b *bot.Bot, mes *models.Message, date time.Time) {
 	values["arrival_day"] = date.Format(layout)
 }
