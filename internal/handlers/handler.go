@@ -36,8 +36,8 @@ func NewHandlers(r *Repository) {
 var values = make(map[string]string)
 var slides []slider.Slide
 var adminID = 1
-var aliPhotoFu = "AgACAgIAAxkBAAIHlmSiv9srlDZCIWgYSHpQscD6OBdLAALEzjEbm2wYSeTj4ydPkS48AQADAgADcwADLwQ"
-var aliPhoto = "AgACAgIAAxkBAAIITGSi9SKEy7LBm6rurLPk1Ex26MaEAAKt0jEbm2wYSZeV8wVg-I5WAQADAgADcwADLwQ"
+var aliPhoto = "AgACAgIAAxkBAAIQr2TJ63_S8PBKh86oLoZMnY9i_y9cAAKYyTEbbSVQShHLDpFLNjuLAQADAgADcwADMAQ"
+var aliPhotoFu = "AgACAgIAAxkBAAIQn2TJ6SQflYbZeL1_a40LRlTXwntXAAKUyTEbbSVQSi8R7wvEBouKAQADAgADcwADMAQ"
 var allBeds []tables.Bed
 
 func (m *Repository) Handler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -51,6 +51,7 @@ func (m *Repository) Handler(ctx context.Context, b *bot.Bot, update *models.Upd
 		})
 		return
 	}
+	fmt.Println(update.Message.Photo[0].FileID)
 	switch update.Message.Text {
 	case "/info":
 		values = make(map[string]string)
